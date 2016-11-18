@@ -20,7 +20,7 @@ public class ReactorController {
 
   private static final Logger log = getLogger(ReactorController.class.getName());
 
-  @Value("${app.url:http://example.com}")
+  @Value("${ping.url:http://example.com}")
   private String url;
 
   private RestTemplate restTemplate = new RestTemplate();
