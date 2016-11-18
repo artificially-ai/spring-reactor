@@ -43,6 +43,12 @@ To run with Gradle, execute the following command:
 
 This application contains tow end-points that can be used for testing purposes.
 
+## Non-blocking
+
+### http://localhost:8080/nonblocking/50
+
+The end-point above is pure reactive. It uses the new WebClient class in order to achieve fully non-blocking communication.
+
 ## Parallelism
 
 ### http://localhost:8080/parallelism/20
