@@ -46,7 +46,7 @@ public class ReactorController {
       .collect(() -> new Result(), (result, status) -> result.add(status)) // <6>
       .doOnSuccess((newResult) -> newResult.stop()); // <7>
 
-    // <1> make 10 calls
+    // <1> make 'max' calls
     // <2> drop down to a new publisher to process in parallel
     // <3> blocking code here inside a Callable to defer execution
     // <4> subscribe to the slow publisher on a background thread
@@ -61,17 +61,14 @@ public class ReactorController {
 
     return range(1, max) // <1>
       .log() //
-      .flatMap((value) -> nonblockingStatus()) // <5>
-      .collect(() -> new Result(), (result, status) -> result.add(status)) // <6>
-      .doOnSuccess((newResult) -> newResult.stop()); // <7>
+      .flatMap((value) -> nonblockingStatus()) // <2>
+      .collect(() -> new Result(), (result, status) -> result.add(status)) // <3>
+      .doOnSuccess((newResult) -> newResult.stop()); // <4>
 
-    // <1> make 10 calls
-    // <2> drop down to a new publisher to process in parallel
-    // <3> blocking code here inside a Callable to defer execution
-    // <4> subscribe to the slow publisher on a background thread
-    // <5> concurrency hint in flatMap
-    // <6> collect results and aggregate into a single object
-    // <7> at the end stop the clock
+    // <1> make 'max' calls
+    // <2> non-blocking code here using WebClient for proper communication
+    // <3> collect results and aggregate into a single object
+    // <4> at the end stop the clock
   }
 
   @RequestMapping("/serial/{max}")
@@ -85,7 +82,7 @@ public class ReactorController {
       .doOnSuccess((newResult) -> newResult.stop()) // <5>
       .subscribeOn(parallel()); // <6>
 
-    // <1> make 10 calls
+    // <1> make 'max' calls
     // <2> stay in the same publisher chain
     // <3> blocking call not deferred (no point in this case)
     // <4> collect results and aggregate into a single object
