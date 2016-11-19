@@ -1,5 +1,6 @@
 package nl.ekholabs.reactive.controller;
 
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,13 @@ public class ReactorController {
   private final RestTemplate restTemplate = new RestTemplate();
   private final WebClient client = WebClient.create(new ReactorClientHttpConnector());
 
+  private Supplier<HttpStatus> blockingCall = () -> this.restTemplate.getForEntity(url, String.class).getStatusCode();
+
+  private Supplier<Mono<HttpStatus>> nonblockingCall = () -> {
+    final ClientRequest<Void> request = ClientRequest.GET(url).build();
+    return client.exchange(request).then(clientResponse -> Mono.fromCallable(() -> clientResponse.statusCode()));
+  };
+
   @RequestMapping("/parallelism/{max}")
   public Mono<Result> parallelism(@PathVariable final int max) {
     log.info("Handling /parallelism");
@@ -40,7 +48,7 @@ public class ReactorController {
     return range(1, max) // <1>
       .log() //
       .flatMap( // <2>
-        value -> fromCallable(() -> blockingStatus(value)) // <3>
+        value -> fromCallable(() -> blockingCall.get()) // <3>
           .subscribeOn(elastic()), // <4>
         concurrency) // <5>
       .collect(() -> new Result(), (result, status) -> result.add(status)) // <6>
@@ -61,7 +69,7 @@ public class ReactorController {
 
     return range(1, max) // <1>
       .log() //
-      .flatMap((value) -> nonblockingStatus()) // <2>
+      .flatMap((value) -> nonblockingCall.get()) // <2>
       .collect(() -> new Result(), (result, status) -> result.add(status)) // <3>
       .doOnSuccess((newResult) -> newResult.stop()); // <4>
 
@@ -77,7 +85,7 @@ public class ReactorController {
     return range(1, max) // <1>
       .log() //
       .map( // <2>
-        (value) -> blockingStatus(value)) // <3>
+        (value) -> blockingCall.get()) // <3>
       .collect(() -> new Result(), (result, status) -> result.add(status)) // <4>
       .doOnSuccess((newResult) -> newResult.stop()) // <5>
       .subscribeOn(parallel()); // <6>
@@ -88,15 +96,5 @@ public class ReactorController {
     // <4> collect results and aggregate into a single object
     // <5> at the end stop the clock
     // <6> subscribe on a background thread
-  }
-
-  private HttpStatus blockingStatus(final int value) {
-    return this.restTemplate.getForEntity(url, String.class, value).getStatusCode();
-  }
-
-  private Mono<HttpStatus> nonblockingStatus() {
-    final ClientRequest<Void> request = ClientRequest.GET(url).build();
-
-    return client.exchange(request).then(clientResponse -> Mono.fromCallable(() -> clientResponse.statusCode()));
   }
 }
