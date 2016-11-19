@@ -60,3 +60,11 @@ Once the application is running, use the end-point above to test parallel calls 
 ### http://localhost:8080/serial/10
 
 Once the application is running, use the end-point above to test serial calls with the Project Reactor.
+
+# Performance
+
+| Call          | #Requests     | Time (s)  |
+| ------------- |:-------------:| ---------:|
+| Serial        | 1000          | 107       |
+| Parallel      | 1000          |   15      |
+| Non-blocking  | 1000          |    14     |
